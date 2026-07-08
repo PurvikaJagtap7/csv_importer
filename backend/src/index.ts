@@ -2,7 +2,6 @@ import express from 'express';
 import { config } from './config/env.config';
 import { corsMiddleware } from './middleware/cors.middleware';
 import { errorHandler } from './middleware/errorHandler';
-import uploadRouter from './routes/upload.route';
 import extractRouter from './routes/extract.route';
 
 const app = express();
@@ -12,13 +11,23 @@ const PORT = config.PORT;
 app.use(corsMiddleware);
 app.use(express.json());
 
-// Health check endpoint
+// Health check endpoints
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
-// Mount routes under /api
-app.use('/api', uploadRouter);
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/api', extractRouter);
 
 // Global Error Handler
