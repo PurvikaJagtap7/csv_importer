@@ -63,12 +63,6 @@ cd frontend && npm install && npm run dev  # http://localhost:3000
 cd backend && npm test
 ```
 
-**Run with Docker Compose:**
-```bash
-export GROQ_API_KEY="your_gsk_key"   # or $env:GROQ_API_KEY on PowerShell
-docker-compose up --build
-```
-
 ## API
 
 `GET /api/health` → `{ status: "ok", uptime, timestamp }`
@@ -93,7 +87,5 @@ Drag & drop upload, SSE progress streaming, retry mechanism (2 retries per faile
 - Free-tier Groq rate limits (~8K TPM) may throttle very large files; `BATCH_SIZE` is configurable via env var to tune for this
 - Stateless by design — no database, no import history across requests
 
-## Submission
-
-Applying for: **Software Developer Intern**
+## 
 Live app: [url] | GitHub: [url]
