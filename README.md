@@ -80,7 +80,7 @@ Pass `?stream=false` for a plain JSON response instead of SSE.
 
 ## Bonus features implemented
 
-Drag & drop upload, SSE progress streaming, retry mechanism (2 retries per failed batch, isolated), virtualized tables for large CSVs, dark mode, Jest unit tests, Docker Compose, deployed on Vercel + Render.
+Drag & drop upload, SSE progress streaming, retry mechanism (2 retries per failed batch, isolated), virtualized tables for large CSVs, dark mode, Jest unit tests, deployed on Vercel + Render.
 
 ## Known limitations
 
@@ -88,4 +88,4 @@ Drag & drop upload, SSE progress streaming, retry mechanism (2 retries per faile
 - Stateless by design — no database, no import history across requests
 
 ## 
-Live app: [[url](https://csv-importer-jet.vercel.app/)] | GitHub: [url]
+Live app: [[url](https://csv-importer-jet.vercel.app/)] 
