@@ -38,4 +38,26 @@ describe('ValidatorService', () => {
     expect(result.record.crm_status).toBeUndefined();
     expect(result.record.data_source).toBe('eden_park');
   });
+
+  it('should sanitize formula injection characters in all text fields', () => {
+    const aiRecord = {
+      name: '=cmd|\'/c calc\'!A0',
+      company: '+Company',
+      city: '-City',
+      state: '@State',
+      country: '\tCountry',
+      crm_note: '=Note',
+      description: '=Desc',
+      email: 'test@example.com'
+    };
+    const result = validateRecord(aiRecord, 'test@example.com');
+    expect(result.record.name).toBe('\'=cmd|\'/c calc\'!A0');
+    expect(result.record.company).toBe('\'+Company');
+    expect(result.record.city).toBe('\'-City');
+    expect(result.record.state).toBe('\'@State');
+    expect(result.record.country).toBe('\'\tCountry');
+    expect(result.record.crm_note).toBe('\'=Note');
+    expect(result.record.description).toBe('\'=Desc');
+  });
 });
+
