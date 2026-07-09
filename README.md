@@ -88,4 +88,4 @@ Drag & drop upload, SSE progress streaming, retry mechanism (2 retries per faile
 - Stateless by design — no database, no import history across requests
 
 ## 
-Live app: [url] | GitHub: [url]
+Live app: [[url](https://csv-importer-jet.vercel.app/)] | GitHub: [url]
