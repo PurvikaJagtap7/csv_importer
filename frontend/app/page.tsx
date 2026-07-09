@@ -10,11 +10,17 @@ import { extractCsv } from '@/lib/api';
 import { ExtractResponse } from '@/types/crm.types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { UsersIcon } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 type Step = 'upload' | 'preview' | 'loading' | 'result' | 'error';
+type Section = 'import' | 'leads' | 'settings';
 
 export default function HomePage() {
+  const [currentSection, setCurrentSection] = useState<Section>('import');
   const [step, setStep] = useState<Step>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
@@ -61,6 +67,7 @@ export default function HomePage() {
       });
       setExtractResult(result);
       setStep('result');
+      setCurrentSection('leads'); // Auto-navigate to Manage Leads page
     } catch (err: any) {
       setExtractError(err?.message ?? 'Extraction failed. Please try again.');
       setStep('error');
@@ -72,7 +79,6 @@ export default function HomePage() {
     setStep('upload');
     setSelectedFile(null);
     setParseResult(null);
-    setExtractResult(null);
     setUploadError('');
     setParseError('');
     setExtractError('');
@@ -80,141 +86,202 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top nav */}
-      <header className="border-b border-border bg-card">
-        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-base font-semibold text-foreground">CSV Importer</span>
-            <span className="text-muted-foreground/40 select-none">·</span>
-            <span className="text-sm text-muted-foreground">GrowEasy CRM</span>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "260px",
+          "--header-height": "56px",
+        } as React.CSSProperties
+      }
+    >
+      <AppSidebar
+        currentSection={currentSection}
+        onSectionChange={setCurrentSection}
+      />
+      <SidebarInset className="flex flex-1 flex-col min-w-0 overflow-hidden">
+        {/* Header */}
+        <header className="flex h-(--header-height) shrink-0 items-center justify-between border-b px-4 lg:px-6">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mx-2 h-4 data-vertical:self-auto" />
+            <h1 className="text-sm font-semibold tracking-tight">
+              {currentSection === 'import' && 'Import CSV'}
+              {currentSection === 'leads' && 'Manage Leads'}
+              {currentSection === 'settings' && 'Settings'}
+            </h1>
           </div>
           <ThemeToggle />
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+        {/* Main Content Area - Full width */}
+        <main className="flex-1 p-6 space-y-6 w-full min-w-0 overflow-y-auto">
+          {/* Section: Import CSV */}
+          {currentSection === 'import' && (
+            <div className="space-y-6">
+              {step === 'upload' && (
+                <Card className="bg-card border-border">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold text-foreground">Import contacts</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground mt-1">
+                      Upload a CSV file — we'll map it to your CRM schema automatically.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FileUpload
+                      onFileSelect={handleFileSelect}
+                      error={uploadError || parseError}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-        {/* ── Upload ─────────────────────────────────────────────────────── */}
-        {step === 'upload' && (
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-foreground">Import contacts</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground mt-1">
-                Upload a CSV file — we'll map it to your CRM schema automatically.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FileUpload
-                onFileSelect={handleFileSelect}
-                error={uploadError || parseError}
-              />
-            </CardContent>
-          </Card>
-        )}
+              {step === 'preview' && parseResult && (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-base font-semibold text-foreground">Preview</h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        Review your data before running AI extraction.
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      onClick={handleReset}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      ← Choose different file
+                    </Button>
+                  </div>
 
-        {/* ── Preview ────────────────────────────────────────────────────── */}
-        {step === 'preview' && parseResult && (
-          <>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Preview</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Review your data before running AI extraction.
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={handleReset}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Choose different file
-              </Button>
+                  <PreviewTable headers={parseResult.headers} rows={parseResult.rows} />
+
+                  <div className="flex justify-end">
+                    <Button
+                      id="confirm-import-btn"
+                      onClick={handleConfirmImport}
+                      size="default"
+                      className="bg-primary text-primary-foreground hover:bg-primary/95 font-medium transition-colors"
+                    >
+                      Confirm Import
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {step === 'loading' && (
+                <div className="flex flex-col items-center justify-center py-16">
+                  <Card className="w-full max-w-md bg-card border-border">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold text-foreground">Extracting data…</CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground mt-1">
+                        AI is mapping your CSV to the CRM schema. This may take a moment.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <ProgressBar
+                        current={batchProgress.current}
+                        total={batchProgress.total}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {step === 'error' && (
+                <Card className="border-destructive/30 bg-destructive/10 text-destructive p-6 space-y-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Extraction failed</h2>
+                    <p className="text-sm text-muted-foreground mt-1">{extractError}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleConfirmImport}
+                      className="border-border text-foreground hover:bg-muted"
+                    >
+                      Retry
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={handleReset}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      Start over
+                    </Button>
+                  </div>
+                </Card>
+              )}
             </div>
+          )}
 
-            <PreviewTable headers={parseResult.headers} rows={parseResult.rows} />
-
-            <div className="flex justify-end">
-              <Button
-                id="confirm-import-btn"
-                onClick={handleConfirmImport}
-                size="default"
-                className="bg-primary text-primary-foreground hover:bg-primary/95 font-medium transition-colors"
-              >
-                Confirm Import
-              </Button>
+          {/* Section: Manage Leads */}
+          {currentSection === 'leads' && (
+            <div className="space-y-6">
+              {extractResult ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-base font-semibold text-foreground">Lead Import Results</h2>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        AI extraction finished. Review the results below.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        handleReset();
+                        setCurrentSection('import');
+                      }}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Import another file
+                    </Button>
+                  </div>
+                  <ResultTable result={extractResult} />
+                </>
+              ) : (
+                <Card className="border border-dashed border-border py-12 flex flex-col items-center justify-center text-center">
+                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                    <UsersIcon className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground">No leads imported yet</h3>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                    Upload a CSV file and confirm the import to see your structured CRM records here.
+                  </p>
+                  <Button
+                    onClick={() => setCurrentSection('import')}
+                    className="mt-4"
+                  >
+                    Go to Import
+                  </Button>
+                </Card>
+              )}
             </div>
-          </>
-        )}
+          )}
 
-        {/* ── Loading / Progress ─────────────────────────────────────────── */}
-        {step === 'loading' && (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Card className="w-full max-w-md bg-card border-border">
+          {/* Section: Settings */}
+          {currentSection === 'settings' && (
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="text-lg font-semibold text-foreground">Extracting data…</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground mt-1">
-                  AI is mapping your CSV to the CRM schema. This may take a moment.
+                <CardTitle className="text-lg font-semibold text-foreground">Settings</CardTitle>
+                <CardDescription className="text-sm text-muted-foreground">
+                  Configure GrowEasy CRM importer properties.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ProgressBar
-                  current={batchProgress.current}
-                  total={batchProgress.total}
-                />
+              <CardContent className="space-y-4">
+                <div className="p-4 border border-dashed rounded-lg text-center text-sm text-muted-foreground">
+                  Settings are currently read-only. Standard configuration parameters (batch size, custom fields mapping) can be customized here in future releases.
+                </div>
               </CardContent>
             </Card>
-          </div>
-        )}
+          )}
+        </main>
 
-        {/* ── Result ─────────────────────────────────────────────────────── */}
-        {step === 'result' && extractResult && (
-          <>
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-semibold text-foreground">Import complete</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  AI extraction finished. Review the results below.
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                onClick={handleReset}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ← Import another file
-              </Button>
-            </div>
-            <ResultTable result={extractResult} />
-          </>
-        )}
-
-        {/* ── Error ──────────────────────────────────────────────────────── */}
-        {step === 'error' && (
-          <Card className="border-destructive/30 bg-destructive/10 text-destructive p-6 space-y-4">
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Extraction failed</h1>
-              <p className="text-sm text-muted-foreground mt-1">{extractError}</p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handleConfirmImport}
-                className="border-border text-foreground hover:bg-muted"
-              >
-                Retry
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleReset}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                Start over
-              </Button>
-            </div>
-          </Card>
-        )}
-      </main>
-    </div>
+        {/* Footer */}
+        <footer className="border-t border-border/50 py-4 px-6 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} GrowEasy CRM. All rights reserved.
+        </footer>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

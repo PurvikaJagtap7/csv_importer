@@ -35,18 +35,25 @@ export function escapeLineBreaks(value: string): string {
 // 3. applyCsvSafety
 // ─────────────────────────────────────────
 
-/**
- * Applies sanitizeField + escapeLineBreaks specifically to crm_note and description,
- * the free-text fields most likely to contain injection characters or newlines.
- */
 export function applyCsvSafety(record: Partial<CrmRecord>): Partial<CrmRecord> {
   const result = { ...record };
 
-  if (result.crm_note) {
-    result.crm_note = sanitizeField(escapeLineBreaks(result.crm_note));
-  }
-  if (result.description) {
-    result.description = sanitizeField(escapeLineBreaks(result.description));
+  const textFields: (keyof CrmRecord)[] = [
+    'name',
+    'company',
+    'city',
+    'state',
+    'country',
+    'lead_owner',
+    'crm_note',
+    'description',
+  ];
+
+  for (const field of textFields) {
+    const val = result[field];
+    if (typeof val === 'string' && val) {
+      result[field] = sanitizeField(escapeLineBreaks(val)) as any;
+    }
   }
 
   return result;

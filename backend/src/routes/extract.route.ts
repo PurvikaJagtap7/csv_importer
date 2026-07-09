@@ -42,10 +42,11 @@ async function processBatchesConcurrently(
 
       try {
         const aiOutput = await retryWithBackoff(
-          () => aiExtractorService.extractBatch(batch),
+          (currentBatch) => aiExtractorService.extractBatch(currentBatch || batch),
           2,
           batchIndex,
-          (r) => Array.isArray(r)
+          (r) => Array.isArray(r),
+          batch
         );
 
         batchResult = aiOutput.map((aiRecord, rowIdx) => {

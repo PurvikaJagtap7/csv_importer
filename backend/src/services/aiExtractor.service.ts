@@ -9,6 +9,8 @@ export class AiExtractorService {
   async extractBatch(rows: any[]): Promise<any[]> {
     const rawResponse = await groqClientService.callGroq(CRM_EXTRACTION_PROMPT, rows);
 
+    console.log('[AI Raw Response]:', JSON.stringify(rawResponse, null, 2));
+
     // groqClientService already parses and validates the array shape — just return it
     if (!Array.isArray(rawResponse)) {
       throw new Error(

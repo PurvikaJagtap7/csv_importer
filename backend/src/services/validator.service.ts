@@ -85,7 +85,13 @@ export function mergeMultiValue(
 
   // Scan raw row for all phone numbers
   // Strip non-numeric for deduplication and storage
-  const rawPhones = rawRowText.match(PHONE_REGEX) ?? [];
+  const rawPhones = (rawRowText.match(PHONE_REGEX) ?? []).filter((p) => {
+    const cleanP = p.trim();
+    // Reject if it looks like a date (e.g. YYYY-MM-DD, YYYY/MM/DD, DD-MM-YYYY, DD/MM/YYYY)
+    if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}$/.test(cleanP)) return false;
+    if (/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}$/.test(cleanP)) return false;
+    return true;
+  });
   const cleanedPhones = Array.from(
     new Set(rawPhones.map((p) => p.replace(/[\s\-().+]/g, '')))
   ).filter((p) => p.length >= 7);
@@ -138,6 +144,41 @@ export function validateRecord(
 ): { record: CrmRecord; skip: boolean; skipReason?: string } {
   // 1. Start from AI output
   let partial: Partial<CrmRecord> = { ...aiRecord };
+
+  // Normalization for name field if the AI returned it under a different key
+  if (!partial.name) {
+    const nameAliases = [
+      'full_name',
+      'fullName',
+      'Lead Name',
+      'lead_name',
+      'Customer Name',
+      'customer_name',
+      'Name',
+      'Contact Name',
+      'contact_name',
+      'Client Name',
+      'client_name',
+    ];
+    for (const alias of nameAliases) {
+      if ((aiRecord as any)[alias]) {
+        partial.name = (aiRecord as any)[alias];
+        break;
+      }
+    }
+  }
+
+  // Sanity check mobile_without_country_code
+  if (partial.mobile_without_country_code) {
+    const cleaned = partial.mobile_without_country_code.replace(/[\s\-().+]/g, '');
+    const isValidPhone =
+      /^\d{7,15}$/.test(cleaned) &&
+      !/^\d{4}\d{2}\d{2}$/.test(cleaned) && // YYYYMMDD
+      !/^\d{2}\d{2}\d{4}$/.test(cleaned); // DDMMYYYY
+    if (!isValidPhone) {
+      partial.mobile_without_country_code = undefined;
+    }
+  }
 
   // 2. Validate and sanitize enums
   partial.crm_status = validateEnum(partial.crm_status, ALLOWED_CRM_STATUSES) || undefined;
