@@ -1,4 +1,4 @@
-# GrowEasy AI CSV Importer
+# AI CSV Importer
 
 An AI-powered CSV importer that ingests leads from any CSV layout (Facebook exports,
 Google Ads exports, CRM exports, manual sheets) and maps them into GrowEasy's fixed
